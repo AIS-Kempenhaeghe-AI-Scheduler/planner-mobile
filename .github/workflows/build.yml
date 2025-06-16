@@ -1,0 +1,173 @@
+name: "Build and Release"
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Create a release"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
+jobs:
+  build:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set Up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: gradle
+
+      - name: Set Up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.19.3"
+          channel: "stable"
+          cache: true
+
+      - name: Set Working Directory
+        run: |
+          if [ -d "frontend" ]; then
+            echo "WORKDIR=frontend" >> $GITHUB_ENV
+            echo "ANDROID_DIR=frontend/android" >> $GITHUB_ENV
+          else
+            echo "WORKDIR=." >> $GITHUB_ENV
+            echo "ANDROID_DIR=android" >> $GITHUB_ENV
+          fi
+          echo "Working directory set to: ${{ env.WORKDIR }}"
+          echo "Android directory set to: ${{ env.ANDROID_DIR }}"
+
+      - name: Install Flutter Dependencies
+        working-directory: ${{ env.WORKDIR }}
+        run: flutter pub get
+
+      - name: Regenerate Android project (Kotlin + Groovy DSL)
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          rm -rf android
+          flutter create --overwrite --project-name ai_scheduling_app --android-language kotlin .
+
+      - name: Setup Local Properties
+        run: |
+          mkdir -p ${{ env.ANDROID_DIR }}
+          echo "flutter.sdk=$FLUTTER_HOME" > ${{ env.ANDROID_DIR }}/local.properties
+          echo "Created local.properties in ${{ env.ANDROID_DIR }}"
+
+      - name: Setup Keystore
+        id: setup_keystore
+        run: |
+          mkdir -p ${{ env.ANDROID_DIR }}/app
+
+          # Check if KEYSTORE_BASE64 secret exists
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > ${{ env.ANDROID_DIR }}/app/keystore.jks
+            echo "storeFile=../app/keystore.jks" > ${{ env.ANDROID_DIR }}/key.properties
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> ${{ env.ANDROID_DIR }}/key.properties
+            echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> ${{ env.ANDROID_DIR }}/key.properties
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> ${{ env.ANDROID_DIR }}/key.properties
+            echo "Using production keystore"
+          else
+            # Generate debug keystore for testing
+            keytool -genkeypair -v -keystore ${{ env.ANDROID_DIR }}/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "storeFile=../app/debug.keystore" > ${{ env.ANDROID_DIR }}/key.properties
+            echo "keyAlias=androiddebugkey" >> ${{ env.ANDROID_DIR }}/key.properties
+            echo "storePassword=android" >> ${{ env.ANDROID_DIR }}/key.properties
+            echo "keyPassword=android" >> ${{ env.ANDROID_DIR }}/key.properties
+            echo "Using debug keystore"
+          fi
+
+          # Verify key.properties file
+          echo "key.properties content:"
+          cat ${{ env.ANDROID_DIR }}/key.properties
+
+      - name: Add stub root AndroidManifest
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          cp android/app/src/main/AndroidManifest.xml android/AndroidManifest.xml
+
+      - name: Build Debug APK
+        working-directory: ${{ env.WORKDIR }}
+        run: flutter build apk --debug --verbose
+
+      - name: Build Release APK
+        working-directory: ${{ env.WORKDIR }}
+        run: flutter build apk --release --verbose
+
+      - name: Build App Bundle
+        working-directory: ${{ env.WORKDIR }}
+        run: flutter build appbundle --release
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-builds
+          path: |
+            ${{ env.WORKDIR }}/build/app/outputs/flutter-apk/app-release.apk
+            ${{ env.WORKDIR }}/build/app/outputs/bundle/release/app-release.aab
+
+      - name: Extract Version
+        id: version
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | cut -d' ' -f2 | tr -d '\r')
+          VERSION_NAME=$(echo $VERSION | cut -d'+' -f1)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "Extracted version: $VERSION_NAME (full: $VERSION)"
+
+      - name: Compute tag name
+        run: |
+          # Check if tag already exists on origin
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION_NAME}"; then
+            NEW_TAG="v${VERSION_NAME}-${GITHUB_RUN_NUMBER}"
+          else
+            NEW_TAG="v${VERSION_NAME}"
+          fi
+          echo "Computed tag: $NEW_TAG"
+          echo "TAG_TO_USE=$NEW_TAG" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event.inputs.create_release == 'true'
+        uses: ncipollo/release-action@v1.13.0
+        with:
+          artifacts: "${{ env.WORKDIR }}/build/app/outputs/flutter-apk/app-release.apk,${{ env.WORKDIR }}/build/app/outputs/bundle/release/app-release.aab"
+          tag: ${{ env.TAG_TO_USE }}
+          name: "Kempenhaege Schedule ${{ env.TAG_TO_USE }}"
+          body: |
+            Release of Kempenhaege Schedule version ${{ env.VERSION_NAME }}
+
+            ### What's New
+            - Latest features and improvements
+            - Bug fixes and performance enhancements
+
+            ### APK File
+            Download the APK file to install directly on Android devices
+
+            ### App Bundle
+            The AAB file is for Play Store submission
+          draft: false
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          skip_existing: true
