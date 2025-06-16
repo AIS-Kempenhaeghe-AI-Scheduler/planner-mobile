@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'calendar/schedule_home_page.dart';
+import 'email_entry_screen.dart';
 import 'dart:math' as math;
 
 class LoginScreen extends StatefulWidget {
   final String? prefilledEmail;
-  
+
   const LoginScreen({super.key, this.prefilledEmail});
 
   @override
@@ -15,7 +17,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
-  final _pinController = TextEditingController();  String _enteredPin = '';
+  final _pinController = TextEditingController();
+  String _enteredPin = '';
   String _username = '';
   String _userEmail = '';
   List<Map<String, dynamic>> _users = [];
@@ -200,7 +203,8 @@ class _LoginScreenState extends State<LoginScreen>
     // Login animation
     _loginController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),    );
+      duration: const Duration(milliseconds: 1200),
+    );
 
     _successIconAnimation = TweenSequence<double>([
       TweenSequenceItem(
@@ -275,7 +279,8 @@ class _LoginScreenState extends State<LoginScreen>
     for (final controller in _dotAnimControllers) {
       controller.dispose();
     }
-    super.dispose();  }
+    super.dispose();
+  }
 
   Future<void> _loadUsers() async {
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -285,30 +290,65 @@ class _LoginScreenState extends State<LoginScreen>
         _users = users;
         if (users.isNotEmpty) {
           // If there's a prefilled email, try to find and select that user
-          if (widget.prefilledEmail != null && widget.prefilledEmail!.isNotEmpty) {
-            final userIndex = users.indexWhere((user) => user['email'] == widget.prefilledEmail);
+          if (widget.prefilledEmail != null &&
+              widget.prefilledEmail!.isNotEmpty) {
+            final userIndex = users
+                .indexWhere((user) => user['email'] == widget.prefilledEmail);
             if (userIndex != -1) {
               _selectedUserIndex = userIndex;
             }
           }
-          
           _username = users[_selectedUserIndex]['name'] ?? 'User';
           _userEmail = users[_selectedUserIndex]['email'] ?? '';
+        } else {
+          // No users found, but allow PIN entry for the entered email
+          if (widget.prefilledEmail != null && widget.prefilledEmail!.isNotEmpty) {
+            _users = [
+              {
+                'id': 'temp',
+                'name': 'User',
+                'email': widget.prefilledEmail,
+              }
+            ];
+            _selectedUserIndex = 0;
+            _username = 'User';
+            _userEmail = widget.prefilledEmail!;
+          } else {
+            // No email, redirect to email entry
+            if (mounted) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const EmailEntryScreen(),
+                ),
+              );
+            }
+          }
         }
       });
     } catch (e) {
       debugPrint('Error loading users: $e');
-      // If we can't load users from backend, show a generic user for PIN entry
+      // Network error or backend unavailable, fallback to PIN entry for prefilled email
       setState(() {
-        _users = [
-          {
-            'id': 'temp',
-            'name': 'User',
-            'email': widget.prefilledEmail ?? 'user@example.com',
+        if (widget.prefilledEmail != null && widget.prefilledEmail!.isNotEmpty) {
+          _users = [
+            {
+              'id': 'temp',
+              'name': 'User',
+              'email': widget.prefilledEmail,
+            }
+          ];
+          _selectedUserIndex = 0;
+          _username = 'User';
+          _userEmail = widget.prefilledEmail!;
+        } else {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const EmailEntryScreen(),
+              ),
+            );
           }
-        ];
-        _username = 'User';
-        _userEmail = widget.prefilledEmail ?? 'user@example.com';
+        }
       });
     }
   }
@@ -497,20 +537,23 @@ class _LoginScreenState extends State<LoginScreen>
                     itemBuilder: (context, index) {
                       final user = _users[index];
                       final isSelected = index == _selectedUserIndex;
-                      
+
                       return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isSelected 
+                          color: isSelected
                               ? const Color(0xFF1E88E5).withOpacity(0.1)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(12),
-                          border: isSelected 
-                              ? Border.all(color: const Color(0xFF1E88E5), width: 2)
+                          border: isSelected
+                              ? Border.all(
+                                  color: const Color(0xFF1E88E5), width: 2)
                               : null,
                         ),
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           leading: Container(
                             width: 45,
                             height: 45,
@@ -535,21 +578,27 @@ class _LoginScreenState extends State<LoginScreen>
                             user['name'] ?? 'User',
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                              color: isSelected ? const Color(0xFF1E88E5) : Colors.black87,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? const Color(0xFF1E88E5)
+                                  : Colors.black87,
                             ),
                           ),
-                          subtitle: user['email'] != null && user['email'].isNotEmpty
-                              ? Text(
-                                  user['email'],
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: isSelected 
-                                        ? const Color(0xFF1E88E5).withOpacity(0.7)
-                                        : Colors.grey[600],
-                                  ),
-                                )
-                              : null,
+                          subtitle:
+                              user['email'] != null && user['email'].isNotEmpty
+                                  ? Text(
+                                      user['email'],
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isSelected
+                                            ? const Color(0xFF1E88E5)
+                                                .withOpacity(0.7)
+                                            : Colors.grey[600],
+                                      ),
+                                    )
+                                  : null,
                           trailing: isSelected
                               ? const Icon(
                                   Icons.check_circle,
@@ -561,8 +610,11 @@ class _LoginScreenState extends State<LoginScreen>
                             if (index != _selectedUserIndex) {
                               setState(() {
                                 _selectedUserIndex = index;
-                                _username = _users[_selectedUserIndex]['name'] ?? 'User';
-                                _userEmail = _users[_selectedUserIndex]['email'] ?? '';
+                                _username = _users[_selectedUserIndex]
+                                        ['name'] ??
+                                    'User';
+                                _userEmail =
+                                    _users[_selectedUserIndex]['email'] ?? '';
                                 _enteredPin = '';
                               });
                             }
@@ -573,11 +625,11 @@ class _LoginScreenState extends State<LoginScreen>
                     },
                   ),
                 ),
-                  // Footer with user count
+                // Footer with user count
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    _users.length > 1 
+                    _users.length > 1
                         ? '${_users.length} accounts available'
                         : 'Only one account available',
                     style: TextStyle(
@@ -594,6 +646,7 @@ class _LoginScreenState extends State<LoginScreen>
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -715,80 +768,87 @@ class _LoginScreenState extends State<LoginScreen>
                                             horizontal: 16, vertical: 10),
                                         decoration: BoxDecoration(
                                           color: Colors.white.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(30),
+                                          borderRadius:
+                                              BorderRadius.circular(30),
                                           border: Border.all(
-                                            color: Colors.white.withOpacity(0.3),
-                                            width: 1,                                          ),
+                                            color:
+                                                Colors.white.withOpacity(0.3),
+                                            width: 1,
+                                          ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color:
-                                                  Colors.white.withOpacity(0.2),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                _username.isNotEmpty
-                                                    ? _username[0].toUpperCase()
-                                                    : "U",
-                                                style: const TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white,
-                                                ),
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.white
+                                                    .withOpacity(0.2),
                                               ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Welcome back',
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.white70,
-                                                ),
-                                              ),
-                                              Text(
-                                                _username,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
-                                                  shadows: [
-                                                    Shadow(
-                                                      color: Colors.black26,
-                                                      offset: Offset(0, 1),
-                                                      blurRadius: 2,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              if (_userEmail.isNotEmpty) ...[
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  _userEmail,
+                                              child: Center(
+                                                child: Text(
+                                                  _username.isNotEmpty
+                                                      ? _username[0]
+                                                          .toUpperCase()
+                                                      : "U",
                                                   style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Colors.white54,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white,
                                                   ),
                                                 ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Welcome back',
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Colors.white70,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  _username,
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.white,
+                                                    shadows: [
+                                                      Shadow(
+                                                        color: Colors.black26,
+                                                        offset: Offset(0, 1),
+                                                        blurRadius: 2,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                                if (_userEmail.isNotEmpty) ...[
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    _userEmail,
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.white54,
+                                                    ),
+                                                  ),
+                                                ],
                                               ],
-                                            ],
-                                          ),                                          const SizedBox(width: 8),                                          Icon(
-                                            Icons.arrow_drop_down,
-                                            color: Colors.white70,
-                                            size: 24,
-                                          ),
-                                        ],
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Icon(
+                                              Icons.arrow_drop_down,
+                                              color: Colors.white70,
+                                              size: 24,
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ),

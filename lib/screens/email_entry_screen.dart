@@ -20,7 +20,7 @@ class _EmailEntryScreenState extends State<EmailEntryScreen>
   // Animation controllers
   late AnimationController _backgroundAnimController;
   late AnimationController _pageController;
-  
+
   // Animations
   late Animation<double> _logoScaleAnimation;
   late Animation<double> _logoOpacityAnimation;
@@ -95,6 +95,7 @@ class _EmailEntryScreenState extends State<EmailEntryScreen>
     // Start the initial page animation
     _pageController.forward();
   }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -114,10 +115,11 @@ class _EmailEntryScreenState extends State<EmailEntryScreen>
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('savedEmail', email);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => LoginScreen(prefilledEmail: email),
         ),
+        (route) => false,
       );
     } catch (e) {
       setState(() {
@@ -129,6 +131,7 @@ class _EmailEntryScreenState extends State<EmailEntryScreen>
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -302,7 +305,8 @@ class _EmailEntryScreenState extends State<EmailEntryScreen>
                                   width: double.infinity,
                                   height: 50,
                                   child: ElevatedButton(
-                                    onPressed: _isLoading ? null : _proceedToPin,
+                                    onPressed:
+                                        _isLoading ? null : _proceedToPin,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF1E88E5),
                                       foregroundColor: Colors.white,

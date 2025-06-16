@@ -9,7 +9,8 @@ class AuthService extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = false;
   String? _error;
-  String? _authToken;  // Backend API base URL - update this to match your backend server
+  String?
+      _authToken; // Backend API base URL - update this to match your backend server
   static const String _baseUrl = 'http://192.168.178.248:3000/api';
 
   User? get currentUser => _currentUser;
@@ -66,10 +67,21 @@ class AuthService extends ChangeNotifier {
     try {
       debugPrint('Fetching users from backend...');
 
-      final response = await http.get(
-        Uri.parse('$_baseUrl/admin/users'),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 10));
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is available
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
+
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/admin/users'),
+            headers: headers,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -109,7 +121,7 @@ class AuthService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _authToken = data['token'];
-
+        debugPrint('Auth token: [32m[1m[4m[7m[5m[41m[30m[47m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m');
         // Create User object from backend response
         final userData = data['user'];
         _currentUser = User(

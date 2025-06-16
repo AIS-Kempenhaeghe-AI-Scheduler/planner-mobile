@@ -1,12 +1,37 @@
 import 'package:flutter/material.dart';
 import '../models/event.dart';
 import '../services/event_service.dart';
+import '../services/auth_service.dart';
 
 class EventManager extends ChangeNotifier {
   final EventService _eventService = EventService();
+  final AuthService _authService;
   List<Event> _events = [];
   bool _isLoading = false;
   String? _error;
+
+  EventManager(this._authService) {
+    // Listen for auth changes
+    _authService.addListener(_onAuthChanged);
+    // Set initial token
+    _updateAuthToken();
+  }
+
+  void _onAuthChanged() {
+    _updateAuthToken();
+    // Reload events when auth state changes
+    loadEvents();
+  }
+
+  void _updateAuthToken() {
+    _eventService.setAuthToken(_authService.authToken);
+  }
+
+  @override
+  void dispose() {
+    _authService.removeListener(_onAuthChanged);
+    super.dispose();
+  }
 
   // Getters
   List<Event> get events => _events;

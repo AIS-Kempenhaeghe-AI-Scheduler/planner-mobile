@@ -16,6 +16,7 @@ import 'views/day_view.dart';
 import 'views/week_view.dart';
 import 'views/month_view.dart';
 import 'schedule_recommendation_dialog.dart';
+import 'personal_schedule_page.dart';
 
 enum ViewType { day, week, month }
 
@@ -250,6 +251,20 @@ class _ScheduleHomePageState extends State<ScheduleHomePage> {
                   isSelected: true,
                   onTap: () {
                     Navigator.pop(context);
+                  },
+                ),
+                _buildNotionMenuItem(
+                  context,
+                  icon: Icons.person_pin_circle_outlined,
+                  title: 'My Schedule',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PersonalSchedulePage(),
+                      ),
+                    );
                   },
                 ),
                 _buildNotionMenuItem(

@@ -18,6 +18,7 @@ class _AdminScreenState extends State<AdminScreen> {
   void initState() {
     super.initState();
   }
+
   // Clear all events
   Future<void> _clearAllEvents() async {
     setState(() {
@@ -26,7 +27,8 @@ class _AdminScreenState extends State<AdminScreen> {
       _isSuccess = false;
     });
 
-    try {      final response = await http.delete(
+    try {
+      final response = await http.delete(
         Uri.parse('http://192.168.178.248:3000/api/admin/events'),
       );
 
@@ -80,6 +82,7 @@ class _AdminScreenState extends State<AdminScreen> {
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -156,7 +159,8 @@ class _AdminScreenState extends State<AdminScreen> {
                             color: _isSuccess ? Colors.green : Colors.red,
                           ),
                         ],
-                      ),                    ),
+                      ),
+                    ),
 
                   // Data Management
                   _buildSectionTitle('Data Management'),
@@ -225,8 +229,10 @@ class _AdminScreenState extends State<AdminScreen> {
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [                          _buildInfoRow(
-                              'Backend API', 'http://192.168.178.248:3000'),const SizedBox(height: 8),
+                        children: [
+                          _buildInfoRow(
+                              'Backend API', 'http://192.168.178.248:3000'),
+                          const SizedBox(height: 8),
                           _buildInfoRow('App Version', '1.0.0'),
                           const SizedBox(height: 8),
                           _buildInfoRow('Environment', 'Development'),

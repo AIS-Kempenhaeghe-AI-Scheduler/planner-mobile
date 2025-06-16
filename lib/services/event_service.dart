@@ -27,11 +27,28 @@ class ApiResponse<T> {
 
 class EventService {
   final String _eventsUrl = '${ApiConfig.baseUrl}/events';
+  String? _authToken;
 
-  // Get all events
+  // Set the authentication token
+  void setAuthToken(String? token) {
+    _authToken = token;
+  }
+
+  // Get all events - use personal events if authenticated, otherwise all events
   Future<ApiResponse<List<Event>>> getEvents() async {
     try {
-      final response = await http.get(Uri.parse(_eventsUrl));
+      // Use personal events endpoint if authenticated
+      final url = _authToken != null ? '$_eventsUrl/my' : _eventsUrl;
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is available
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
+
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       if (response.statusCode == 200) {
         final List<dynamic> eventsJson = jsonDecode(response.body);
@@ -55,7 +72,19 @@ class EventService {
   // Get a single event by ID
   Future<ApiResponse<Event>> getEvent(String id) async {
     try {
-      final response = await http.get(Uri.parse('$_eventsUrl/$id'));
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is available
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
+
+      final response = await http.get(
+        Uri.parse('$_eventsUrl/$id'),
+        headers: headers,
+      );
 
       if (response.statusCode == 200) {
         final eventJson = jsonDecode(response.body);
@@ -81,9 +110,18 @@ class EventService {
       final eventJson = _eventToJson(event);
       print('Creating event with data: $eventJson');
 
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is available
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
+
       final response = await http.post(
         Uri.parse(_eventsUrl),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode(eventJson),
       );
 
@@ -112,9 +150,18 @@ class EventService {
       print('Updating event with id: ${event.id}');
       print('Update data: $eventJson');
 
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is available
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
+
       final response = await http.put(
         Uri.parse('$_eventsUrl/${event.id}'),
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode(eventJson),
       );
 
@@ -140,7 +187,19 @@ class EventService {
   // Delete an event
   Future<ApiResponse<bool>> deleteEvent(String id) async {
     try {
-      final response = await http.delete(Uri.parse('$_eventsUrl/$id'));
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+
+      // Add authorization header if token is available
+      if (_authToken != null) {
+        headers['Authorization'] = 'Bearer $_authToken';
+      }
+
+      final response = await http.delete(
+        Uri.parse('$_eventsUrl/$id'),
+        headers: headers,
+      );
 
       if (response.statusCode == 200) {
         return ApiResponse.success(true);
