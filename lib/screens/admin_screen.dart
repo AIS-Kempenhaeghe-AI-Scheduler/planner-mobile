@@ -26,10 +26,9 @@ class _AdminScreenState extends State<AdminScreen> {
       _statusMessage = 'Clearing all events...';
       _isSuccess = false;
     });
-
     try {
       final response = await http.delete(
-        Uri.parse('http://192.168.178.248:3000/api/admin/events'),
+        Uri.parse('http://192.168.178.192:3000/api/admin/events'),
       );
 
       setState(() {
@@ -58,10 +57,9 @@ class _AdminScreenState extends State<AdminScreen> {
       _statusMessage = 'Resetting user preferences...';
       _isSuccess = false;
     });
-
     try {
       final response = await http.delete(
-        Uri.parse('http://192.168.178.248:3000/api/admin/preferences'),
+        Uri.parse('http://192.168.178.192:3000/api/admin/preferences'),
       );
 
       setState(() {
@@ -231,7 +229,7 @@ class _AdminScreenState extends State<AdminScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildInfoRow(
-                              'Backend API', 'http://192.168.178.248:3000'),
+                              'Backend API', 'http://192.168.178.192:3000'),
                           const SizedBox(height: 8),
                           _buildInfoRow('App Version', '1.0.0'),
                           const SizedBox(height: 8),

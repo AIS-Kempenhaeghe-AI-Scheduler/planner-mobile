@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../models/event.dart';
 import '../../../screens/event_form_screen.dart';
-import '../../../services/event_manager.dart';
+import '../../../services/schedule_service.dart';
 import '../../../theme/theme_provider.dart';
 import 'event_badge.dart';
 
@@ -23,7 +23,8 @@ class TimeSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeFormat = DateFormat('h:mm a');
-    final eventManager = Provider.of<EventManager>(context, listen: false);
+    final scheduleService =
+        Provider.of<ScheduleService>(context, listen: false);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -48,9 +49,9 @@ class TimeSlot extends StatelessWidget {
               builder: (context) => EventFormScreen(initialDate: time),
             ),
           ).then((newEvent) {
-            // If a new event was created, add it to the EventManager
+            // If a new event was created, add it to the ScheduleService
             if (newEvent != null) {
-              eventManager.addEvent(newEvent);
+              scheduleService.addEvent(newEvent);
             }
           });
         },
@@ -125,7 +126,8 @@ class TimeSlot extends StatelessWidget {
   }
 
   Widget _buildEventsList(BuildContext context) {
-    final eventManager = Provider.of<EventManager>(context, listen: false);
+    final scheduleService =
+        Provider.of<ScheduleService>(context, listen: false);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -144,7 +146,7 @@ class TimeSlot extends StatelessWidget {
             ).then((updatedEvent) {
               // If the event was updated
               if (updatedEvent != null) {
-                eventManager.updateEvent(
+                scheduleService.updateEvent(
                   updatedEvent,
                 );
               }

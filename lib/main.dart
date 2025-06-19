@@ -6,7 +6,7 @@ import 'screens/calendar/schedule_home_page.dart';
 import 'screens/login_screen.dart';
 import 'screens/email_entry_screen.dart';
 import 'theme/theme_provider.dart';
-import 'services/event_manager.dart';
+import 'services/schedule_service.dart';
 import 'services/user_preference_manager.dart';
 import 'services/auth_service.dart';
 
@@ -19,11 +19,15 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => AuthService()),
-        ChangeNotifierProxyProvider<AuthService, EventManager>(
-          create: (context) =>
-              EventManager(Provider.of<AuthService>(context, listen: false)),
-          update: (context, authService, previous) =>
-              previous ?? EventManager(authService),
+        ChangeNotifierProxyProvider<AuthService, ScheduleService>(
+          create: (context) => ScheduleService()
+            ..setAuthToken(
+                Provider.of<AuthService>(context, listen: false).authToken),
+          update: (context, authService, previous) {
+            final service = previous ?? ScheduleService();
+            service.setAuthToken(authService.authToken);
+            return service;
+          },
         ),
         ChangeNotifierProvider(create: (context) => UserPreferenceManager()),
       ],
@@ -56,6 +60,7 @@ class _KempenhaegeScheduleAppState extends State<KempenhaegeScheduleApp> {
       _isLoading = false;
     });
   }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {

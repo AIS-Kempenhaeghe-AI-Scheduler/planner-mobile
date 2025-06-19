@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../models/event.dart';
-import '../../../services/event_manager.dart';
+import '../../../services/schedule_service.dart';
 import '../../../theme/theme_provider.dart';
 import '../../event_form_screen.dart';
 
@@ -19,12 +19,23 @@ class WeekView extends StatelessWidget {
     required this.selectedDay,
     required this.onDateChanged,
   });
-
   @override
   Widget build(BuildContext context) {
+    // Get events for each day to show markers
+    final scheduleService = Provider.of<ScheduleService>(context);
+
+    // Event loader function for table calendar
+    List<dynamic> getEventsForDay(DateTime day) {
+      final events = scheduleService.getEventsForDay(day);
+      return events;
+    }
+
     return RefreshIndicator(
       onRefresh: () async {
-        await Provider.of<EventManager>(context, listen: false).loadEvents();
+        // Load events for the current week
+        final weekStart = scheduleService.getWeekStart(focusedDay);
+        await Provider.of<ScheduleService>(context, listen: false)
+            .loadEventsForWeek(weekStart);
         // Optional: Show a success message
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -51,9 +62,22 @@ class WeekView extends StatelessWidget {
           },
           onPageChanged: (focusedDay) {
             onDateChanged(focusedDay, selectedDay);
+            // Load events for the week containing the new focused day
+            final weekStart = scheduleService.getWeekStart(focusedDay);
+            Provider.of<ScheduleService>(context, listen: false)
+                .loadEventsForWeek(weekStart);
           },
+          // Add event loader to display markers on days with events
+          eventLoader: getEventsForDay,
           calendarStyle: CalendarStyle(
             markersMaxCount: 3,
+            markerDecoration: const BoxDecoration(
+              color: ThemeProvider.notionBlue,
+              shape: BoxShape.circle,
+            ),
+            markerSize: 7.0,
+            markersAlignment: Alignment.bottomCenter,
+            markerMargin: const EdgeInsets.only(top: 1.0),
             isTodayHighlighted: true,
             todayDecoration: BoxDecoration(
               color: ThemeProvider.notionFaintBlue,

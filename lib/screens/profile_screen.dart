@@ -4,7 +4,6 @@ import '../services/auth_service.dart';
 import '../theme/theme_provider.dart';
 import 'login_screen.dart';
 import 'preference_screen.dart';
-import 'calendar/schedule_home_page.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -486,7 +485,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 _buildPreferenceTile(
                   title: 'Schedule Preferences',
-                  subtitle: 'Set your preferences for AI scheduling',
+                  subtitle: 'Set your scheduling preferences',
                   icon: Icons.event_note,
                   onTap: () {
                     Navigator.push(

@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/event.dart';
 import '../../theme/theme_provider.dart';
-import '../../services/event_manager.dart';
-import '../../services/user_preference_manager.dart';
-import '../../services/schedule_recommendation_service.dart';
+import '../../services/schedule_service.dart';
 import '../../screens/event_form_screen.dart';
 import '../../screens/profile_screen.dart';
 import '../../screens/preference_screen.dart';
@@ -15,7 +11,6 @@ import '../../screens/admin_screen.dart';
 import 'views/day_view.dart';
 import 'views/week_view.dart';
 import 'views/month_view.dart';
-import 'schedule_recommendation_dialog.dart';
 import 'personal_schedule_page.dart';
 
 enum ViewType { day, week, month }
@@ -28,7 +23,6 @@ class ScheduleHomePage extends StatefulWidget {
 }
 
 class _ScheduleHomePageState extends State<ScheduleHomePage> {
-  CalendarFormat _calendarFormat = CalendarFormat.month;
   ViewType _currentView = ViewType.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -54,11 +48,10 @@ class _ScheduleHomePageState extends State<ScheduleHomePage> {
         focusedDay: focusedDay,
         selectedDay: selectedDay,
         onDateChanged: _onDateChanged,
-        onViewChanged: _switchToDay);
-
-    // Load events from backend when app starts
+        onViewChanged:
+            _switchToDay); // Load events from backend when app starts
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<EventManager>(context, listen: false).loadEvents();
+      _loadEventsForCurrentView();
     });
   }
 
@@ -67,26 +60,33 @@ class _ScheduleHomePageState extends State<ScheduleHomePage> {
       _focusedDay = focusedDay;
       _selectedDay = selectedDay;
     });
+
+    // Load appropriate events based on current view
+    _loadEventsForCurrentView();
+  }
+
+  void _loadEventsForCurrentView() {
+    final scheduleService =
+        Provider.of<ScheduleService>(context, listen: false);
+
+    switch (_currentView) {
+      case ViewType.week:
+        final weekStart = scheduleService.getWeekStart(_focusedDay);
+        scheduleService.loadEventsForWeek(weekStart);
+        break;
+      case ViewType.month:
+        scheduleService.loadEventsForMonth(_focusedDay.year, _focusedDay.month);
+        break;
+      case ViewType.day:
+        // Day view uses the events already loaded for the month/week
+        break;
+    }
   }
 
   void _switchToDay() {
     setState(() {
       _currentView = ViewType.day;
     });
-  }
-
-  void _showAIScheduleRecommendations() {
-    final preferenceManager =
-        Provider.of<UserPreferenceManager>(context, listen: false);
-
-    // Initialize preference manager if needed
-    if (preferenceManager.categories.isEmpty) {
-      preferenceManager.initialize().then((_) {
-        showScheduleRecommendationDialog(context);
-      });
-    } else {
-      showScheduleRecommendationDialog(context);
-    }
   }
 
   @override
@@ -133,11 +133,6 @@ class _ScheduleHomePageState extends State<ScheduleHomePage> {
           ),
           const SizedBox(width: 8),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAIScheduleRecommendations,
-        backgroundColor: ThemeProvider.notionBlue,
-        child: const Icon(Icons.auto_awesome, color: Colors.white),
       ),
       body: Column(
         children: [
@@ -186,12 +181,9 @@ class _ScheduleHomePageState extends State<ScheduleHomePage> {
               onSelectionChanged: (Set<ViewType> selection) {
                 setState(() {
                   _currentView = selection.first;
-                  if (_currentView == ViewType.week) {
-                    _calendarFormat = CalendarFormat.week;
-                  } else if (_currentView == ViewType.month) {
-                    _calendarFormat = CalendarFormat.month;
-                  }
                 });
+                // Load events for the new view
+                _loadEventsForCurrentView();
               },
               style: ButtonStyle(
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,

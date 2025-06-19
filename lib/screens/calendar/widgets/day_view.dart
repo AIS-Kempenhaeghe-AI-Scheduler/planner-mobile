@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../../services/event_manager.dart';
+import '../../../services/schedule_service.dart';
 import '../../../theme/theme_provider.dart';
 import 'time_slot.dart';
 
@@ -23,7 +23,7 @@ class DayView extends StatelessWidget {
   Widget build(BuildContext context) {
     final dayToShow = selectedDay ?? focusedDay;
     final formatter = DateFormat('EEEE, MMMM d, yyyy');
-    final eventManager = Provider.of<EventManager>(context);
+    final scheduleService = Provider.of<ScheduleService>(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +68,7 @@ class DayView extends StatelessWidget {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              await Provider.of<EventManager>(context, listen: false)
+              await Provider.of<ScheduleService>(context, listen: false)
                   .loadEvents();
               // Optional: Show a success message
               if (!context.mounted) return;
@@ -81,21 +81,21 @@ class DayView extends StatelessWidget {
               );
             },
             color: ThemeProvider.notionBlue,
-            child: _buildTimeSlots(context, dayToShow),
+            child: _buildTimeSlots(context, dayToShow, scheduleService),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTimeSlots(BuildContext context, DateTime day) {
+  Widget _buildTimeSlots(
+      BuildContext context, DateTime day, ScheduleService scheduleService) {
     // Create time slots from 6 AM to 9 PM
     final List<DateTime> timeSlots = [];
     DateTime startTime = DateTime(day.year, day.month, day.day, 6);
 
-    // Get events for the selected day from the EventManager
-    final eventManager = Provider.of<EventManager>(context);
-    final eventsForDay = eventManager.getEventsForDay(day);
+    // Get events for the selected day from the ScheduleService
+    final eventsForDay = scheduleService.getEventsForDay(day);
 
     for (int i = 0; i < 16; i++) {
       // 16 hours - 6 AM to 9 PM
@@ -156,17 +156,15 @@ class DayView extends StatelessWidget {
               eventsAtThisHour: eventsAtThisHour,
             );
           },
-        ),
-
-        // Loading indicator - placed AFTER (above) the list view
-        if (eventManager.isLoading)
+        ), // Loading indicator - placed AFTER (above) the list view
+        if (scheduleService.isLoading)
           Container(
             color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
             child: const Center(child: CircularProgressIndicator()),
           ),
 
         // Error message - placed AFTER (above) the list view
-        if (eventManager.error != null)
+        if (scheduleService.error != null)
           Container(
             color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
             child: Center(
@@ -191,13 +189,13 @@ class DayView extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        eventManager.error!,
+                        scheduleService.error!,
                         style: Theme.of(context).textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: () => eventManager.loadEvents(),
+                        onPressed: () => scheduleService.loadEvents(),
                         child: const Text('Retry'),
                       ),
                     ],

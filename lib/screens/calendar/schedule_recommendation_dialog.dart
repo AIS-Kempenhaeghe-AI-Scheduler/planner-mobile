@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../models/event.dart';
 import '../../services/user_preference_manager.dart';
 import '../../services/schedule_recommendation_service.dart';
-import '../../services/event_manager.dart';
+import '../../services/schedule_service.dart';
 import '../../theme/theme_provider.dart';
 import '../preference_screen.dart';
 
@@ -378,12 +378,12 @@ void _generateAndShowSchedule(
           TextButton(
             onPressed: suggestedEvents.isEmpty
                 ? null
-                : () {
+                : () async {
                     // Add the suggested events to the calendar
-                    final eventManager =
-                        Provider.of<EventManager>(context, listen: false);
+                    final scheduleService =
+                        Provider.of<ScheduleService>(context, listen: false);
                     for (final event in suggestedEvents) {
-                      eventManager.addEvent(event);
+                      await scheduleService.addEvent(event);
                     }
 
                     Navigator.pop(context);

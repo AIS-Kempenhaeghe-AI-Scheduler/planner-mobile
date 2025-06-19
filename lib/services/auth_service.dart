@@ -9,15 +9,20 @@ class AuthService extends ChangeNotifier {
   User? _currentUser;
   bool _isLoading = false;
   String? _error;
-  String?
-      _authToken; // Backend API base URL - update this to match your backend server
-  static const String _baseUrl = 'http://192.168.178.248:3000/api';
+  String? _authToken;
+  String? _refreshToken; // Add refresh token storage
+  static const String _baseUrl = 'http://192.168.178.192:3000/api';
 
   User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null && _authToken != null;
   String? get error => _error;
   String? get authToken => _authToken;
+
+  // Public method to refresh auth token
+  Future<bool> refreshAuthToken() async {
+    return await _refreshAuthToken();
+  }
 
   AuthService() {
     _initializeAuthService();
@@ -39,16 +44,21 @@ class AuthService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedToken = prefs.getString('authToken');
+      final savedRefreshToken = prefs.getString('refreshToken');
       final savedUserJson = prefs.getString('currentUser');
 
       debugPrint('Saved token exists: ${savedToken != null}');
+      debugPrint('Saved refresh token exists: ${savedRefreshToken != null}');
       debugPrint('Saved user exists: ${savedUserJson != null}');
 
-      if (savedToken != null && savedUserJson != null) {
+      if (savedToken != null &&
+          savedRefreshToken != null &&
+          savedUserJson != null) {
         // Try to restore the user session
         final userData = jsonDecode(savedUserJson) as Map<String, dynamic>;
         _currentUser = User.fromJson(userData);
         _authToken = savedToken;
+        _refreshToken = savedRefreshToken;
 
         debugPrint(
             'User session restored successfully for: ${_currentUser!.name}');
@@ -82,6 +92,16 @@ class AuthService extends ChangeNotifier {
             headers: headers,
           )
           .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 401) {
+        // Token expired, try to refresh
+        if (await _refreshAuthToken()) {
+          // Retry the request with new token
+          return await getUsers();
+        } else {
+          throw Exception('Failed to refresh token');
+        }
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -121,7 +141,9 @@ class AuthService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _authToken = data['token'];
-        debugPrint('Auth token: [32m[1m[4m[7m[5m[41m[30m[47m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m[0m[1m[32m');
+        _refreshToken = data['refreshToken'];
+        debugPrint('Login successful with tokens received');
+
         // Create User object from backend response
         final userData = data['user'];
         _currentUser = User(
@@ -138,6 +160,7 @@ class AuthService extends ChangeNotifier {
         // Save authentication state
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('authToken', _authToken!);
+        await prefs.setString('refreshToken', _refreshToken!);
         await prefs.setString(
             'currentUser', jsonEncode(_currentUser!.toJson()));
 
@@ -166,10 +189,12 @@ class AuthService extends ChangeNotifier {
       debugPrint('Logging out...');
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('authToken');
+      await prefs.remove('refreshToken');
       await prefs.remove('currentUser');
 
       _currentUser = null;
       _authToken = null;
+      _refreshToken = null;
       notifyListeners();
       debugPrint('Logout successful');
     } catch (e) {
@@ -182,5 +207,49 @@ class AuthService extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  Future<bool> _refreshAuthToken() async {
+    if (_refreshToken == null) {
+      debugPrint('No refresh token available');
+      return false;
+    }
+
+    try {
+      debugPrint('Attempting to refresh auth token...');
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/admin/refresh-token'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': _refreshToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _authToken = data['token'];
+        _refreshToken = data['refreshToken'];
+
+        // Save new tokens
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('authToken', _authToken!);
+        await prefs.setString('refreshToken', _refreshToken!);
+
+        debugPrint('Token refreshed successfully');
+        notifyListeners();
+        return true;
+      } else {
+        debugPrint('Failed to refresh token: ${response.statusCode}');
+        // Refresh token is invalid, log out user
+        await logout();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error refreshing token: $e');
+      // Network error or other issue, log out user
+      await logout();
+      return false;
+    }
   }
 }

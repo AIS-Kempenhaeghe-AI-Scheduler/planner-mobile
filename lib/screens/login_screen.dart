@@ -302,7 +302,8 @@ class _LoginScreenState extends State<LoginScreen>
           _userEmail = users[_selectedUserIndex]['email'] ?? '';
         } else {
           // No users found, but allow PIN entry for the entered email
-          if (widget.prefilledEmail != null && widget.prefilledEmail!.isNotEmpty) {
+          if (widget.prefilledEmail != null &&
+              widget.prefilledEmail!.isNotEmpty) {
             _users = [
               {
                 'id': 'temp',
@@ -329,7 +330,8 @@ class _LoginScreenState extends State<LoginScreen>
       debugPrint('Error loading users: $e');
       // Network error or backend unavailable, fallback to PIN entry for prefilled email
       setState(() {
-        if (widget.prefilledEmail != null && widget.prefilledEmail!.isNotEmpty) {
+        if (widget.prefilledEmail != null &&
+            widget.prefilledEmail!.isNotEmpty) {
           _users = [
             {
               'id': 'temp',

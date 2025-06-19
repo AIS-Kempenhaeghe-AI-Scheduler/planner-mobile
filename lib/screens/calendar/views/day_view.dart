@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../models/event.dart';
-import '../../../services/event_manager.dart';
+import '../../../services/schedule_service.dart';
 import '../../../theme/theme_provider.dart';
 import '../../event_form_screen.dart';
 import '../widgets/event_badge.dart';
@@ -49,6 +49,12 @@ class DayView extends StatelessWidget {
                   final previousDay =
                       dayToShow.subtract(const Duration(days: 1));
                   onDateChanged(previousDay, previousDay);
+                  // Load events for the new month if we crossed a month boundary
+                  if (previousDay.month != dayToShow.month) {
+                    Provider.of<ScheduleService>(context, listen: false)
+                        .loadEventsForMonth(
+                            previousDay.year, previousDay.month);
+                  }
                 },
                 style: IconButton.styleFrom(
                   minimumSize: const Size(32, 32),
@@ -60,6 +66,11 @@ class DayView extends StatelessWidget {
                 onPressed: () {
                   final nextDay = dayToShow.add(const Duration(days: 1));
                   onDateChanged(nextDay, nextDay);
+                  // Load events for the new month if we crossed a month boundary
+                  if (nextDay.month != dayToShow.month) {
+                    Provider.of<ScheduleService>(context, listen: false)
+                        .loadEventsForMonth(nextDay.year, nextDay.month);
+                  }
                 },
                 style: IconButton.styleFrom(
                   minimumSize: const Size(32, 32),
@@ -73,8 +84,8 @@ class DayView extends StatelessWidget {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              await Provider.of<EventManager>(context, listen: false)
-                  .loadEvents();
+              await Provider.of<ScheduleService>(context, listen: false)
+                  .loadEventsForMonth(dayToShow.year, dayToShow.month);
               // Optional: Show a success message
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
@@ -96,11 +107,10 @@ class DayView extends StatelessWidget {
   Widget _buildTimeSlots(BuildContext context, DateTime day) {
     // Create time slots from 6 AM to 9 PM
     final List<DateTime> timeSlots = [];
-    DateTime startTime = DateTime(day.year, day.month, day.day, 6);
-
-    // Get events for the selected day from the EventManager
-    final eventManager = Provider.of<EventManager>(context);
-    final eventsForDay = eventManager.getEventsForDay(day);
+    DateTime startTime = DateTime(day.year, day.month, day.day,
+        6); // Get events for the selected day from the ScheduleService
+    final scheduleService = Provider.of<ScheduleService>(context);
+    final eventsForDay = scheduleService.getEventsForDay(day);
 
     for (int i = 0; i < 16; i++) {
       // 16 hours - 6 AM to 9 PM
@@ -162,17 +172,15 @@ class DayView extends StatelessWidget {
               eventsAtThisHour: eventsAtThisHour,
             );
           },
-        ),
-
-        // Loading indicator - placed AFTER (above) the list view
-        if (eventManager.isLoading)
+        ), // Loading indicator - placed AFTER (above) the list view
+        if (scheduleService.isLoading)
           Container(
             color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
             child: const Center(child: CircularProgressIndicator()),
           ),
 
         // Error message - placed AFTER (above) the list view
-        if (eventManager.error != null)
+        if (scheduleService.error != null)
           Container(
             color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
             child: Center(
@@ -197,13 +205,13 @@ class DayView extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        eventManager.error!,
+                        scheduleService.error!,
                         style: Theme.of(context).textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: () => eventManager.loadEvents(),
+                        onPressed: () => scheduleService.loadEvents(),
                         child: const Text('Retry'),
                       ),
                     ],
