@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../models/user.dart';
 import '../models/event_preference.dart';
 import '../models/event_category.dart';
@@ -6,18 +7,100 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class UserPreferenceManager extends ChangeNotifier {
+  static const String _baseUrl = 'http://192.168.178.192:3000/api/schedule';
+  
   User? _currentUser;
   List<EventCategory> _categories = [];
   bool _isLoading = false;
   String? _error;
-
   // Getters
   User? get currentUser => _currentUser;
   List<EventCategory> get categories => _categories;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Initialize with some default categories
+  // Fetch activities from the API
+  Future<List<EventCategory>> _fetchActivitiesFromAPI() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/activities'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final activities = data['activities'] as List;
+        
+        // Convert activities to EventCategory objects
+        return activities.asMap().entries.map((entry) {
+          final index = entry.key;
+          final activity = entry.value as String;
+          
+          // Generate different colors for each activity
+          final colors = [
+            Colors.blue,
+            Colors.green,
+            Colors.orange,
+            Colors.purple,
+            Colors.red,
+            Colors.teal,
+            Colors.indigo,
+            Colors.pink,
+          ];
+          
+          return EventCategory(
+            id: activity.toLowerCase().replaceAll(' ', '_').replaceAll('&', 'and'),
+            name: activity,
+            color: colors[index % colors.length],
+            description: 'Healthcare activity: $activity',
+          );
+        }).toList();
+      } else {
+        throw Exception('Failed to load activities: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('UserPreferenceManager: Error fetching activities from API - $e');
+      // Return fallback categories if API fails
+      return _getDefaultCategories();
+    }
+  }
+
+  // Get default fallback categories
+  List<EventCategory> _getDefaultCategories() {
+    return [
+      EventCategory(
+        id: 'personal_care',
+        name: 'Personal Care',
+        color: Colors.blue,
+        description: 'Healthcare activity: Personal Care',
+      ),
+      EventCategory(
+        id: 'medical_support',
+        name: 'Medical Support',
+        color: Colors.green,
+        description: 'Healthcare activity: Medical Support',
+      ),
+      EventCategory(
+        id: 'activities_and_therapy',
+        name: 'Activities & Therapy',
+        color: Colors.orange,
+        description: 'Healthcare activity: Activities & Therapy',
+      ),
+      EventCategory(
+        id: 'meal_services',
+        name: 'Meal Services',
+        color: Colors.purple,
+        description: 'Healthcare activity: Meal Services',
+      ),
+      EventCategory(
+        id: 'night_care',
+        name: 'Night Care',
+        color: Colors.red,
+        description: 'Healthcare activity: Night Care',
+      ),
+    ];
+  }
+  // Initialize with activities from API
   Future<void> initialize() async {
     _isLoading = true;
     notifyListeners();
@@ -26,40 +109,9 @@ class UserPreferenceManager extends ChangeNotifier {
       // Load saved user from local storage
       await _loadUserFromStorage();
 
-      // Initialize with default categories if none exist
+      // Fetch activities from API or use cached categories
       if (_categories.isEmpty) {
-        _categories = [
-          EventCategory(
-            id: 'meeting',
-            name: 'Meeting',
-            color: Colors.blue,
-            description: 'Regular team or client meetings',
-          ),
-          EventCategory(
-            id: 'training',
-            name: 'Training',
-            color: Colors.green,
-            description: 'Learning and development sessions',
-          ),
-          EventCategory(
-            id: 'break',
-            name: 'Break',
-            color: Colors.orange,
-            description: 'Scheduled breaks and rest times',
-          ),
-          EventCategory(
-            id: 'admin',
-            name: 'Admin Work',
-            color: Colors.purple,
-            description: 'Administrative tasks and paperwork',
-          ),
-          EventCategory(
-            id: 'client',
-            name: 'Client Session',
-            color: Colors.red,
-            description: 'One-on-one sessions with clients',
-          ),
-        ];
+        _categories = await _fetchActivitiesFromAPI();
       }
 
       // If no user exists, create a default one
@@ -78,6 +130,11 @@ class UserPreferenceManager extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to initialize user preferences: $e';
       print('UserPreferenceManager: Error initializing - $_error');
+      
+      // Fallback to default categories if everything fails
+      if (_categories.isEmpty) {
+        _categories = _getDefaultCategories();
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -129,6 +186,25 @@ class UserPreferenceManager extends ChangeNotifier {
     } catch (e) {
       print('UserPreferenceManager: Error saving to storage - $e');
       // Handle error but don't throw to avoid disrupting the app flow
+    }
+  }
+
+  // Refresh activities from API
+  Future<void> refreshActivities() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _categories = await _fetchActivitiesFromAPI();
+      // Save updated categories to storage
+      await _saveUserToStorage();
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to refresh activities: $e';
+      print('UserPreferenceManager: Error refreshing activities - $_error');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 

@@ -50,21 +50,18 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.category_outlined,
+                children: [                  Icon(
+                    Icons.local_hospital_outlined,
                     size: 64,
                     color: Colors.grey[400],
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No event categories available',
+                  const SizedBox(height: 16),                  const Text(
+                    'No healthcare activities available',
                     style: TextStyle(fontSize: 16),
                   ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () => preferenceManager.initialize(),
-                    child: const Text('Reload categories'),
+                  const SizedBox(height: 8),                  ElevatedButton(
+                    onPressed: () => preferenceManager.refreshActivities(),
+                    child: const Text('Reload activities'),
                   ),
                 ],
               ),
@@ -90,18 +87,15 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Set your preferences for each event category. Your preferences will be used for personalized scheduling.',
+                        const SizedBox(height: 8),                        const Text(
+                          'Set your preferences for each healthcare activity. Your preferences will be used for personalized scheduling.',
                           style: TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
                   ),
-                ),
-
-                Text(
-                  'Event Categories',
+                ),                Text(
+                  'Healthcare Activities',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
@@ -590,9 +584,8 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
               Text(
                 'Preference Score',
                 style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'Indicates how much you enjoy or prefer working on this category of events.',
+              ),              Text(
+                'Indicates how much you enjoy or prefer working on this healthcare activity.',
               ),
               SizedBox(height: 12),
               Text(
@@ -600,7 +593,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               Text(
-                'The time of day when you prefer to handle this type of event.',
+                'The time of day when you prefer to handle this type of healthcare activity.',
               ),
               SizedBox(height: 12),
               Text(
@@ -608,7 +601,7 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               Text(
-                'The days of the week when you prefer to handle this type of event.',
+                'The days of the week when you prefer to handle this type of healthcare activity.',
               ),
               SizedBox(height: 16),
               Text(
