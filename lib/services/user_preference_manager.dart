@@ -8,7 +8,7 @@ import 'dart:convert';
 
 class UserPreferenceManager extends ChangeNotifier {
   static const String _baseUrl = 'http://192.168.178.192:3000/api/schedule';
-  
+
   User? _currentUser;
   List<EventCategory> _categories = [];
   bool _isLoading = false;
@@ -30,12 +30,12 @@ class UserPreferenceManager extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final activities = data['activities'] as List;
-        
+
         // Convert activities to EventCategory objects
         return activities.asMap().entries.map((entry) {
           final index = entry.key;
           final activity = entry.value as String;
-          
+
           // Generate different colors for each activity
           final colors = [
             Colors.blue,
@@ -47,9 +47,12 @@ class UserPreferenceManager extends ChangeNotifier {
             Colors.indigo,
             Colors.pink,
           ];
-          
+
           return EventCategory(
-            id: activity.toLowerCase().replaceAll(' ', '_').replaceAll('&', 'and'),
+            id: activity
+                .toLowerCase()
+                .replaceAll(' ', '_')
+                .replaceAll('&', 'and'),
             name: activity,
             color: colors[index % colors.length],
             description: 'Healthcare activity: $activity',
@@ -100,6 +103,7 @@ class UserPreferenceManager extends ChangeNotifier {
       ),
     ];
   }
+
   // Initialize with activities from API
   Future<void> initialize() async {
     _isLoading = true;
@@ -130,7 +134,7 @@ class UserPreferenceManager extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to initialize user preferences: $e';
       print('UserPreferenceManager: Error initializing - $_error');
-      
+
       // Fallback to default categories if everything fails
       if (_categories.isEmpty) {
         _categories = _getDefaultCategories();

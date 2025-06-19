@@ -50,16 +50,19 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [                  Icon(
+                children: [
+                  Icon(
                     Icons.local_hospital_outlined,
                     size: 64,
                     color: Colors.grey[400],
                   ),
-                  const SizedBox(height: 16),                  const Text(
+                  const SizedBox(height: 16),
+                  const Text(
                     'No healthcare activities available',
                     style: TextStyle(fontSize: 16),
                   ),
-                  const SizedBox(height: 8),                  ElevatedButton(
+                  const SizedBox(height: 8),
+                  ElevatedButton(
                     onPressed: () => preferenceManager.refreshActivities(),
                     child: const Text('Reload activities'),
                   ),
@@ -87,14 +90,16 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),                        const Text(
+                        const SizedBox(height: 8),
+                        const Text(
                           'Set your preferences for each healthcare activity. Your preferences will be used for personalized scheduling.',
                           style: TextStyle(fontSize: 14),
                         ),
                       ],
                     ),
                   ),
-                ),                Text(
+                ),
+                Text(
                   'Healthcare Activities',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -584,7 +589,8 @@ class _PreferenceScreenState extends State<PreferenceScreen> {
               Text(
                 'Preference Score',
                 style: TextStyle(fontWeight: FontWeight.bold),
-              ),              Text(
+              ),
+              Text(
                 'Indicates how much you enjoy or prefer working on this healthcare activity.',
               ),
               SizedBox(height: 12),
