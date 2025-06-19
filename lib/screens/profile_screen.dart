@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../theme/theme_provider.dart';
-import 'login_screen.dart';
+import 'login_screen_new.dart';
 import 'preference_screen.dart';
+import 'pin_reset_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -340,13 +341,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     await authService.logout();
 
-    if (!mounted) return;
-
-    // Navigate back to login screen
+    if (!mounted) return; // Navigate back to login screen
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(builder: (context) => const NewLoginScreen()),
       (route) => false, // Remove all previous routes
     );
+  }
+
+  void _showPinResetDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const PinResetDialog(),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'PIN reset successfully! You can now use your new PIN to log in.'),
+          backgroundColor: ThemeProvider.notionBlue,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -358,7 +376,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!authService.isAuthenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(builder: (context) => const NewLoginScreen()),
         );
       });
       return const Scaffold(
@@ -547,11 +565,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   subtitle: 'Update your pincode',
                   icon: Icons.lock_outline,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Pincode change coming soon'),
-                      ),
-                    );
+                    _showPinResetDialog();
                   },
                 ),
                 const Divider(),

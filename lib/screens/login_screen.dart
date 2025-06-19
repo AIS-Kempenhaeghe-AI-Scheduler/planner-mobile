@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
-import 'calendar/schedule_home_page.dart';
+import '../theme/theme_provider.dart';
+import 'calendar/my_schedule_page.dart';
 import 'email_entry_screen.dart';
 import 'dart:math' as math;
 
@@ -410,10 +411,9 @@ class _LoginScreenState extends State<LoginScreen>
         // Play success animation and navigate
         _loginController.forward().then((_) {
           if (mounted) {
-            Navigator.of(context).pushReplacement(
-              PageRouteBuilder(
+            Navigator.of(context).pushReplacement(              PageRouteBuilder(
                 pageBuilder: (context, animation, secondaryAnimation) =>
-                    const ScheduleHomePage(),
+                    const MySchedulePage(),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {
                   return FadeTransition(
@@ -648,9 +648,10 @@ class _LoginScreenState extends State<LoginScreen>
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return AnimatedBuilder(
       animation: Listenable.merge([
         _pageController,
@@ -662,40 +663,34 @@ class _LoginScreenState extends State<LoginScreen>
       ]),
       builder: (context, child) {
         return Scaffold(
+          backgroundColor: isDarkMode ? ThemeProvider.notionBlack : const Color(0xFFFAFAFA),
           body: Stack(
             children: [
-              // Animated background with subtle movement
-              AnimatedBuilder(
-                animation: _waveAnimation,
-                builder: (context, child) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(
-                            math.sin(_waveAnimation.value * 0.2) * 0.2 + 0.2,
-                            math.cos(_waveAnimation.value * 0.2) * 0.2 - 0.2),
-                        end: Alignment(
-                            math.cos(_waveAnimation.value * 0.2) * 0.2 + 0.8,
-                            math.sin(_waveAnimation.value * 0.2) * 0.2 + 1.2),
-                        colors: [
-                          Color.lerp(Colors.white, const Color(0xFF1E88E5),
-                              _backgroundAnimation.value)!,
-                          Color.lerp(Colors.white, const Color(0xFF0D47A1),
-                              _backgroundAnimation.value)!,
-                        ],
-                        stops: const [0.3, 1.0],
+              // Subtle background pattern
+              Container(
+                decoration: BoxDecoration(
+                  color: isDarkMode ? ThemeProvider.notionBlack : const Color(0xFFFAFAFA),
+                ),
+                child: AnimatedBuilder(
+                  animation: _waveAnimation,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: SubtlePatternPainter(
+                        isDarkMode: isDarkMode,
+                        animationValue: _waveAnimation.value,
                       ),
-                    ),
-                  );
-                },
+                      size: Size.infinite,
+                    );
+                  },
+                ),
               ),
 
               // Success overlay animation
               if (_loginController.isAnimating)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.blue.shade900
-                        .withOpacity(_loginController.value * 0.9),
+                    color: (isDarkMode ? ThemeProvider.notionBlack : Colors.white)
+                        .withOpacity(_loginController.value * 0.95),
                     child: Center(
                       child: ScaleTransition(
                         scale: _successIconAnimation,
@@ -706,10 +701,21 @@ class _LoginScreenState extends State<LoginScreen>
                               curve: const Interval(0.0, 0.3),
                             ),
                           ),
-                          child: const Icon(
-                            Icons.check_circle_outline,
-                            color: Colors.white,
-                            size: 90,
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: ThemeProvider.notionBlue.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: ThemeProvider.notionBlue.withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.check_circle_outline,
+                              color: ThemeProvider.notionBlue,
+                              size: 60,
+                            ),
                           ),
                         ),
                       ),
@@ -723,20 +729,37 @@ class _LoginScreenState extends State<LoginScreen>
                 child: SafeArea(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Logo section
+                    children: [                      // Logo section with Notion-style card
                       Padding(
                         padding: const EdgeInsets.only(top: 60),
                         child: ScaleTransition(
                           scale: _logoScaleAnimation,
                           child: FadeTransition(
                             opacity: _logoOpacityAnimation,
-                            child: Image.asset(
-                              'assets/logo/Kempenhaeghe_logo.png',
-                              width: 200,
-                              height: 80,
-                              fit: BoxFit.contain,
-                              color: Colors.white,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 40),
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isDarkMode ? const Color(0xFF2D2D2D) : const Color(0xFFE5E5E5),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Image.asset(
+                                'assets/logo/Kempenhaeghe_logo.png',
+                                width: 180,
+                                height: 60,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
@@ -764,103 +787,93 @@ class _LoginScreenState extends State<LoginScreen>
                                     color: Colors.transparent,
                                     child: InkWell(
                                       onTap: _showUserSelectionDialog,
-                                      borderRadius: BorderRadius.circular(30),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(30),
-                                          border: Border.all(
-                                            color:
-                                                Colors.white.withOpacity(0.3),
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: Colors.white
-                                                    .withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(30),                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 20, vertical: 16),
+                                          decoration: BoxDecoration(
+                                            color: isDarkMode ? const Color(0xFF1A1A1A) : Colors.white,
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(
+                                              color: isDarkMode ? const Color(0xFF2D2D2D) : const Color(0xFFE5E5E5),
+                                              width: 1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.08),
+                                                blurRadius: 12,
+                                                offset: const Offset(0, 4),
                                               ),
-                                              child: Center(
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 20,
+                                                backgroundColor: ThemeProvider.notionBlue.withOpacity(0.1),
                                                 child: Text(
                                                   _username.isNotEmpty
-                                                      ? _username[0]
-                                                          .toUpperCase()
+                                                      ? _username[0].toUpperCase()
                                                       : "U",
                                                   style: const TextStyle(
-                                                    fontSize: 20,
+                                                    fontSize: 16,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.white,
+                                                    color: ThemeProvider.notionBlue,
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Welcome back',
-                                                  style: const TextStyle(
-                                                    fontSize: 14,
-                                                    color: Colors.white70,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  _username,
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.white,
-                                                    shadows: [
-                                                      Shadow(
-                                                        color: Colors.black26,
-                                                        offset: Offset(0, 1),
-                                                        blurRadius: 2,
+                                              const SizedBox(width: 12),
+                                              Flexible(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Welcome back',
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: isDarkMode ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      _username,
+                                                      style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
+                                                      ),
+                                                    ),
+                                                    if (_userEmail.isNotEmpty) ...[
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        _userEmail,
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color: isDarkMode ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
                                                       ),
                                                     ],
-                                                  ),
+                                                  ],
                                                 ),
-                                                if (_userEmail.isNotEmpty) ...[
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    _userEmail,
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.white54,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Icon(
-                                              Icons.arrow_drop_down,
-                                              color: Colors.white70,
-                                              size: 24,
-                                            ),
-                                          ],
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Icon(
+                                                Icons.expand_more,
+                                                color: isDarkMode ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                                                size: 20,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text(
+                                  ),                                  const SizedBox(height: 20),
+                                  Text(
                                     'Enter your PIN to continue',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white70,
+                                      fontSize: 14,
+                                      color: isDarkMode ? const Color(0xFF9CA3AF) : const Color(0xFF6B7280),
+                                      fontWeight: FontWeight.w500,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -887,59 +900,39 @@ class _LoginScreenState extends State<LoginScreen>
                                   (index) => ScaleTransition(
                                     scale: index < _enteredPin.length
                                         ? _dotAnimations[index]
-                                        : const AlwaysStoppedAnimation(1.0),
-                                    child: AnimatedContainer(
-                                      duration:
-                                          const Duration(milliseconds: 300),
-                                      width:
-                                          40, // Reduced from 50 to fit 6 dots
-                                      height:
-                                          40, // Reduced from 50 to fit 6 dots
+                                        : const AlwaysStoppedAnimation(1.0),                                    child: AnimatedContainer(
+                                      duration: const Duration(milliseconds: 300),
+                                      width: 40,
+                                      height: 40,
                                       decoration: BoxDecoration(
                                         color: index < _enteredPin.length
-                                            ? Color.lerp(
-                                                Colors.white.withOpacity(0.2),
-                                                Colors.white.withOpacity(0.5),
-                                                index < _enteredPin.length
-                                                    ? _dotColorAnimations[index]
-                                                        .value
-                                                    : 0.0,
-                                              )
-                                            : Colors.white.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(
-                                            10), // Adjusted from 12
-                                        boxShadow: index < _enteredPin.length
-                                            ? [
-                                                BoxShadow(
-                                                  color: Colors.white
-                                                      .withOpacity(0.3),
-                                                  blurRadius: 8,
-                                                  spreadRadius: 2,
-                                                ),
-                                              ]
-                                            : null,
+                                            ? ThemeProvider.notionBlue
+                                            : (isDarkMode ? const Color(0xFF1A1A1A) : Colors.white),
+                                        borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: Colors.white.withOpacity(
-                                              index < _enteredPin.length
-                                                  ? 0.6
-                                                  : 0.3),
-                                          width: 1.5,
+                                          color: index < _enteredPin.length
+                                              ? ThemeProvider.notionBlue
+                                              : (isDarkMode ? const Color(0xFF2D2D2D) : const Color(0xFFE5E5E5)),
+                                          width: 2,
                                         ),
+                                        boxShadow: [
+                                          if (index < _enteredPin.length)
+                                            BoxShadow(
+                                              color: ThemeProvider.notionBlue.withOpacity(0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                        ],
                                       ),
-                                      child: _isLoggingIn &&
-                                              index < _enteredPin.length
+                                      child: _isLoggingIn && index < _enteredPin.length
                                           ? Center(
                                               child: SizedBox(
                                                 width: 16,
                                                 height: 16,
-                                                child:
-                                                    CircularProgressIndicator(
+                                                child: CircularProgressIndicator(
                                                   strokeWidth: 2,
-                                                  valueColor:
-                                                      AlwaysStoppedAnimation<
-                                                          Color>(Colors.white),
-                                                  backgroundColor: Colors.white
-                                                      .withOpacity(0.2),
+                                                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                                                  backgroundColor: Colors.white.withOpacity(0.2),
                                                 ),
                                               ),
                                             )
@@ -948,8 +941,10 @@ class _LoginScreenState extends State<LoginScreen>
                                                   child: Icon(
                                                     Icons.circle,
                                                     color: Colors.white,
-                                                    size: 16,
+                                                    size: 12,
                                                   ),
+                                                )
+                                              : null,
                                                 )
                                               : null,
                                     ),
@@ -1137,7 +1132,52 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
-          ),
-        ));
+          ),        ));
+  }
+}
+
+class SubtlePatternPainter extends CustomPainter {
+  final bool isDarkMode;
+  final double animationValue;
+
+  SubtlePatternPainter({
+    required this.isDarkMode,
+    required this.animationValue,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = (isDarkMode 
+          ? ThemeProvider.notionGray.withOpacity(0.03) 
+          : const Color(0xFFE5E5E5).withOpacity(0.3))
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+
+    final spacing = 40.0;
+    final offset = animationValue * spacing;
+
+    // Draw subtle grid pattern
+    for (double x = -spacing + (offset % spacing); x < size.width + spacing; x += spacing) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        paint,
+      );
+    }
+
+    for (double y = -spacing + (offset % spacing); y < size.height + spacing; y += spacing) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(SubtlePatternPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue || 
+           oldDelegate.isDarkMode != isDarkMode;
   }
 }

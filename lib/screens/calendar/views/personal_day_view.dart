@@ -78,6 +78,7 @@ class _PersonalDayViewState extends State<PersonalDayView> {
   Widget build(BuildContext context) {
     final dayToShow = widget.selectedDay ?? widget.focusedDay;
     final formatter = DateFormat('EEEE, MMMM d, yyyy');
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,15 +89,20 @@ class _PersonalDayViewState extends State<PersonalDayView> {
             children: [
               Text(
                 formatter.format(dayToShow),
-                style: const TextStyle(
-                  color: ThemeProvider.notionBlack,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.chevron_left, size: 20),
+                icon: Icon(
+                  Icons.chevron_left,
+                  size: 20,
+                  color:
+                      isDarkMode ? Colors.white70 : ThemeProvider.notionBlack,
+                ),
                 onPressed: () {
                   final previousDay =
                       dayToShow.subtract(const Duration(days: 1));
@@ -108,7 +114,12 @@ class _PersonalDayViewState extends State<PersonalDayView> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right, size: 20),
+                icon: Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color:
+                      isDarkMode ? Colors.white70 : ThemeProvider.notionBlack,
+                ),
                 onPressed: () {
                   final nextDay = dayToShow.add(const Duration(days: 1));
                   widget.onDateChanged(nextDay, nextDay);
@@ -121,7 +132,10 @@ class _PersonalDayViewState extends State<PersonalDayView> {
             ],
           ),
         ),
-        const Divider(height: 1),
+        Divider(
+          height: 1,
+          color: isDarkMode ? const Color(0xFF2D2D2D) : const Color(0xFFE5E5E5),
+        ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadSchedule,
@@ -134,6 +148,8 @@ class _PersonalDayViewState extends State<PersonalDayView> {
   }
 
   Widget _buildContent() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -150,14 +166,14 @@ class _PersonalDayViewState extends State<PersonalDayView> {
             Icon(
               Icons.error_outline,
               size: 48,
-              color: Colors.grey[400],
+              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
               'Failed to load schedule',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -166,7 +182,7 @@ class _PersonalDayViewState extends State<PersonalDayView> {
               _error!.replaceAll('Exception: ', ''),
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
               ),
               textAlign: TextAlign.center,
             ),
@@ -185,12 +201,12 @@ class _PersonalDayViewState extends State<PersonalDayView> {
     }
 
     if (_daySchedule == null) {
-      return const Center(
+      return Center(
         child: Text(
           'No schedule data available',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.grey,
+            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
           ),
         ),
       );
@@ -200,22 +216,24 @@ class _PersonalDayViewState extends State<PersonalDayView> {
   }
 
   Widget _buildTimeSlots() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     if (_daySchedule!.workingHours.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.calendar_today,
               size: 48,
-              color: Colors.grey,
+              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'No activities scheduled for this day',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey,
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
               ),
             ),
           ],
@@ -237,11 +255,13 @@ class _PersonalDayViewState extends State<PersonalDayView> {
           decoration: BoxDecoration(
             color: isCurrentHour
                 ? ThemeProvider.notionBlue.withOpacity(0.1)
-                : Colors.transparent,
+                : (isDarkMode ? const Color(0xFF1A1A1A) : Colors.transparent),
             borderRadius: BorderRadius.circular(8.0),
             border: isCurrentHour
                 ? Border.all(color: ThemeProvider.notionBlue.withOpacity(0.3))
-                : null,
+                : (isDarkMode
+                    ? Border.all(color: const Color(0xFF2D2D2D))
+                    : null),
           ),
           child: Padding(
             padding: const EdgeInsets.all(12.0),
@@ -257,7 +277,7 @@ class _PersonalDayViewState extends State<PersonalDayView> {
                       fontSize: 12,
                       color: isCurrentHour
                           ? ThemeProvider.notionBlue
-                          : Colors.grey[600],
+                          : (isDarkMode ? Colors.grey[400] : Colors.grey[600]),
                       fontWeight:
                           isCurrentHour ? FontWeight.w600 : FontWeight.normal,
                     ),
@@ -288,9 +308,11 @@ class _PersonalDayViewState extends State<PersonalDayView> {
                               ),
                               child: Text(
                                 activity.activity,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
-                                  color: ThemeProvider.notionBlack,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : ThemeProvider.notionBlack,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -304,7 +326,9 @@ class _PersonalDayViewState extends State<PersonalDayView> {
                             'Free time',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[400],
+                              color: isDarkMode
+                                  ? Colors.grey[500]
+                                  : Colors.grey[400],
                               fontStyle: FontStyle.italic,
                             ),
                           ),

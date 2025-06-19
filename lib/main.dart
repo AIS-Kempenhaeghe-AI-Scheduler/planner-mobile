@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'screens/calendar/schedule_home_page.dart';
-import 'screens/login_screen.dart';
+import 'screens/calendar/my_schedule_page.dart';
+import 'screens/login_screen_new.dart';
 import 'screens/email_entry_screen.dart';
 import 'theme/theme_provider.dart';
 import 'services/schedule_service.dart';
@@ -75,12 +75,11 @@ class _KempenhaegeScheduleAppState extends State<KempenhaegeScheduleApp> {
 
     final themeProvider = Provider.of<ThemeProvider>(context);
     final authService = Provider.of<AuthService>(context);
-
     Widget home;
     if (authService.isAuthenticated) {
-      home = const ScheduleHomePage();
+      home = const MySchedulePage();
     } else if (_savedEmail != null && _savedEmail!.isNotEmpty) {
-      home = LoginScreen(prefilledEmail: _savedEmail!);
+      home = NewLoginScreen(prefilledEmail: _savedEmail!);
     } else {
       home = const EmailEntryScreen();
     }

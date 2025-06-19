@@ -12,12 +12,14 @@ class WeekView extends StatelessWidget {
   final DateTime focusedDay;
   final DateTime? selectedDay;
   final Function(DateTime, DateTime?) onDateChanged;
+  final VoidCallback? onViewChanged;
 
   const WeekView({
     super.key,
     required this.focusedDay,
     required this.selectedDay,
     required this.onDateChanged,
+    this.onViewChanged,
   });
   @override
   Widget build(BuildContext context) {
@@ -59,6 +61,8 @@ class WeekView extends StatelessWidget {
           },
           onDaySelected: (selectedDay, focusedDay) {
             onDateChanged(focusedDay, selectedDay);
+            // Switch to day view when a day is selected
+            onViewChanged?.call();
           },
           onPageChanged: (focusedDay) {
             onDateChanged(focusedDay, selectedDay);

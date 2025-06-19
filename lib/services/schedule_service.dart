@@ -95,6 +95,77 @@ class ScheduleService extends ChangeNotifier {
     }
   }
 
+  // Get all employees' daily schedule
+  Future<Map<String, dynamic>> getAllEmployeesDailySchedule(String date) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/daily/$date'),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication required');
+      } else {
+        throw Exception('Failed to load daily schedule: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching all employees daily schedule: $e');
+      rethrow;
+    }
+  }
+
+  // Get all employees' weekly schedule
+  Future<Map<String, dynamic>> getAllEmployeesWeeklySchedule(
+      String startDate) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/weekly/$startDate'),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication required');
+      } else {
+        throw Exception('Failed to load weekly schedule: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching all employees weekly schedule: $e');
+      rethrow;
+    }
+  }
+
+  // Get all employees' monthly schedule
+  Future<Map<String, dynamic>> getAllEmployeesMonthlySchedule(
+      int year, int month) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/monthly/$year/$month'),
+            headers: _headers,
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication required');
+      } else {
+        throw Exception('Failed to load monthly schedule: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error fetching all employees monthly schedule: $e');
+      rethrow;
+    }
+  }
+
   // Load events from API - now loads from schedule endpoints
   Future<void> loadEvents() async {
     _isLoading = true;

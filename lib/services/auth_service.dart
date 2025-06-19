@@ -252,4 +252,66 @@ class AuthService extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<Map<String, dynamic>> resetPin(
+      String currentPin, String newPin) async {
+    try {
+      debugPrint('Attempting to reset PIN...');
+
+      if (_authToken == null) {
+        throw Exception('Not authenticated');
+      }
+
+      // Validate new PIN format
+      if (newPin.length != 6 || !RegExp(r'^\d{6}$').hasMatch(newPin)) {
+        return {
+          'success': false,
+          'message': 'New PIN must be exactly 6 digits'
+        };
+      }
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/admin/reset-pin'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $_authToken',
+            },
+            body: jsonEncode({
+              'currentPin': currentPin,
+              'newPin': newPin,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        debugPrint('PIN reset successful');
+        return {
+          'success': true,
+          'message': data['message'] ?? 'PIN reset successfully'
+        };
+      } else if (response.statusCode == 401) {
+        // Try to refresh token and retry
+        final refreshed = await _refreshAuthToken();
+        if (refreshed) {
+          return resetPin(currentPin, newPin);
+        } else {
+          return {
+            'success': false,
+            'message': 'Authentication failed. Please log in again.'
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to reset PIN'
+        };
+      }
+    } catch (e) {
+      debugPrint('PIN reset error: $e');
+      return {'success': false, 'message': 'Network error. Please try again.'};
+    }
+  }
 }

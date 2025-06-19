@@ -81,6 +81,7 @@ class _PersonalWeekViewState extends State<PersonalWeekView> {
     final weekStart = _scheduleService.getWeekStart(dayToShow);
     final weekEnd = weekStart.add(const Duration(days: 6));
     final formatter = DateFormat('MMM d');
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,8 +92,8 @@ class _PersonalWeekViewState extends State<PersonalWeekView> {
             children: [
               Text(
                 '${formatter.format(weekStart)} - ${formatter.format(weekEnd)}',
-                style: const TextStyle(
-                  color: ThemeProvider.notionBlack,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),

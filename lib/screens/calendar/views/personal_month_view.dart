@@ -86,6 +86,8 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -96,15 +98,20 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
             children: [
               Text(
                 DateFormat('MMMM yyyy').format(widget.focusedDay),
-                style: const TextStyle(
-                  color: ThemeProvider.notionBlack,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.chevron_left, size: 20),
+                icon: Icon(
+                  Icons.chevron_left,
+                  size: 20,
+                  color:
+                      isDarkMode ? Colors.white70 : ThemeProvider.notionBlack,
+                ),
                 onPressed: () {
                   final previousMonth = DateTime(
                     widget.focusedDay.year,
@@ -119,7 +126,12 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right, size: 20),
+                icon: Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color:
+                      isDarkMode ? Colors.white70 : ThemeProvider.notionBlack,
+                ),
                 onPressed: () {
                   final nextMonth = DateTime(
                     widget.focusedDay.year,
@@ -136,7 +148,10 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
             ],
           ),
         ),
-        const Divider(height: 1),
+        Divider(
+          height: 1,
+          color: isDarkMode ? const Color(0xFF2D2D2D) : const Color(0xFFE5E5E5),
+        ),
         // Calendar content
         Expanded(
           child: RefreshIndicator(
@@ -150,6 +165,8 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
   }
 
   Widget _buildContent() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -166,14 +183,14 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
             Icon(
               Icons.error_outline,
               size: 48,
-              color: Colors.grey[400],
+              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
             ),
             const SizedBox(height: 16),
             Text(
               'Failed to load schedule',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: isDarkMode ? Colors.grey[300] : Colors.grey[600],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -182,7 +199,7 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
               _error!.replaceAll('Exception: ', ''),
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
               ),
               textAlign: TextAlign.center,
             ),
@@ -204,6 +221,8 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
   }
 
   Widget _buildCalendar() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -216,24 +235,55 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
             },
             eventLoader: _getActivitiesForDay,
             startingDayOfWeek: StartingDayOfWeek.monday,
-            calendarStyle: const CalendarStyle(
+            calendarStyle: CalendarStyle(
               outsideDaysVisible: false,
-              weekendTextStyle: TextStyle(color: ThemeProvider.notionBlack),
-              holidayTextStyle: TextStyle(color: ThemeProvider.notionBlack),
-              selectedDecoration: BoxDecoration(
+              weekendTextStyle: TextStyle(
+                color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
+              ),
+              holidayTextStyle: TextStyle(
+                color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
+              ),
+              defaultTextStyle: TextStyle(
+                color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
+              ),
+              selectedDecoration: const BoxDecoration(
                 color: ThemeProvider.notionBlue,
                 shape: BoxShape.circle,
               ),
               todayDecoration: BoxDecoration(
-                color: ThemeProvider.notionBlue,
+                color: ThemeProvider.notionBlue.withOpacity(0.3),
                 shape: BoxShape.circle,
+              ),
+              selectedTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+              todayTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
               markersMaxCount: 3,
-              markerDecoration: BoxDecoration(
+              markerDecoration: const BoxDecoration(
                 color: ThemeProvider.notionBlue,
                 shape: BoxShape.circle,
               ),
-              markerMargin: EdgeInsets.symmetric(horizontal: 1.0),
+              markerMargin: const EdgeInsets.symmetric(horizontal: 1.0),
+            ),
+            daysOfWeekStyle: DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                color: isDarkMode
+                    ? ThemeProvider.notionGray
+                    : const Color(0xFF6B7280),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              weekendStyle: TextStyle(
+                color: isDarkMode
+                    ? ThemeProvider.notionGray
+                    : const Color(0xFF6B7280),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             headerStyle: const HeaderStyle(
               formatButtonVisible: false,
@@ -253,16 +303,18 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
             onPageChanged: (focusedDay) {
               widget.onDateChanged(focusedDay, widget.selectedDay);
             },
-          ),
-          // Selected day details
+          ), // Selected day details
           if (widget.selectedDay != null)
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: isDarkMode ? const Color(0xFF1A1A1A) : Colors.grey[50],
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(
+                  color:
+                      isDarkMode ? const Color(0xFF2D2D2D) : Colors.grey[200]!,
+                ),
               ),
               child: _buildSelectedDayDetails(),
             ),
@@ -276,6 +328,7 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
 
     final activities = _getActivitiesForDay(widget.selectedDay!);
     final formatter = DateFormat('EEEE, MMMM d, yyyy');
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -284,10 +337,10 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
           children: [
             Text(
               formatter.format(widget.selectedDay!),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: ThemeProvider.notionBlack,
+                color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
               ),
             ),
             const Spacer(),
@@ -315,7 +368,7 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
             'No activities scheduled for this day',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: isDarkMode ? Colors.grey[400] : Colors.grey[500],
               fontStyle: FontStyle.italic,
             ),
           )
@@ -323,12 +376,12 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Scheduled Activities:',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: ThemeProvider.notionBlack,
+                  color: isDarkMode ? Colors.white : ThemeProvider.notionBlack,
                 ),
               ),
               const SizedBox(height: 8),
@@ -351,7 +404,7 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.medical_services,
                           size: 16,
                           color: ThemeProvider.notionBlue,
@@ -359,9 +412,11 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
                         const SizedBox(width: 6),
                         Text(
                           activity.activity,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: ThemeProvider.notionBlack,
+                            color: isDarkMode
+                                ? Colors.white
+                                : ThemeProvider.notionBlack,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -371,7 +426,9 @@ class _PersonalMonthViewState extends State<PersonalMonthView> {
                             activity.time!,
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey[600],
+                              color: isDarkMode
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600],
                             ),
                           ),
                         ],
